@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GraysonOS</title>
+    <link rel="icon" type="image/png" href="https://www.nolangraysongames.com/Logo.png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .desktop {
+            width: 100%;
+            height: calc(100% - 48px);
+            position: relative;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, 100px);
+            gap: 20px;
+            align-content: start;
+        }
+
+        .desktop-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .desktop-icon:hover { background: rgba(255,255,255,0.2); }
+        .desktop-icon-image { width: 64px; height: 64px; font-size: 48px; margin-bottom: 8px; }
+        .desktop-icon-label { color: white; font-size: 13px; text-align: center; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+
+        .taskbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 48px;
+            background: rgba(30,30,30,0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+            z-index: 10000;
+        }
+
+        .start-button {
+            width: 48px;
+            height: 36px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 24px;
+            transition: transform 0.2s;
+            margin-right: 8px;
+        }
+
+        .start-button:hover { transform: scale(1.05); }
+
+        .taskbar-apps {
+            flex: 1;
+            display: flex;
+            gap: 4px;
+            overflow-x: auto;
+        }
+
+        .taskbar-apps::-webkit-scrollbar { display: none; }
+
+        .taskbar-app {
+            min-width: 160px;
+            height: 36px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 12px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .taskbar-app:hover { background: rgba(255,255,255,0.15); }
+        .taskbar-app.active { background: rgba(255,255,255,0.25); border-bottom: 2px solid #667eea; }
+        .taskbar-app-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .system-tray {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-left: 8px;
+            color: white;
+            font-size: 13px;
+        }
+
+        .system-tray-item {
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .system-tray-item:hover { background: rgba(255,255,255,0.1); }
+
+        .start-menu {
+            position: fixed;
+            bottom: 56px;
+            left: 8px;
+            width: 400px;
+            height: 500px;
+            background: rgba(30,30,30,0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            display: none;
+            flex-direction: column;
+            z-index: 9999;
+            animation: slideUp 0.2s ease-out;
+        }
+
+        .start-menu.show { display: flex; }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .start-menu-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .start-menu-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+        }
+
+        .start-menu-avatar {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .start-menu-username { font-size: 18px; font-weight: 600; }
+
+        .start-menu-apps {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .start-menu-section-title {
+            color: rgba(255,255,255,0.6);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin: 12px 0;
+        }
+
+        .start-menu-app {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            color: white;
+        }
+
+        .start-menu-app:hover { background: rgba(255,255,255,0.1); }
+        .start-menu-app-icon { font-size: 24px; width: 32px; }
+        .start-menu-app-name { font-size: 14px; font-weight: 500; }
+        .start-menu-app-desc { font-size: 11px; color: rgba(255,255,255,0.6); }
+
+        .start-menu-footer {
+            padding: 12px 16px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            gap: 8px;
+        }
+
+        .start-menu-footer-btn {
+            flex: 1;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .start-menu-footer-btn:hover { background: rgba(255,255,255,0.15); }
+
+        .window {
+            position: absolute;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 1000;
+        }
+
+        .window.show { display: flex; }
+        .window.maximized {
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: calc(100% - 48px) !important;
+            border-radius: 0;
+        }
+        .window.minimized { display: none; }
+
+        .window-titlebar {
+            height: 40px;
+            background: #f1f3f4;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            cursor: move;
+            user-select: none;
+        }
+
+        .window-title {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 500;
+            color: #202124;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .window-controls { display: flex; gap: 8px; }
+
+        .window-control-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .window-control-btn:hover { background: rgba(0,0,0,0.1); }
+        .window-control-btn.close:hover { background: #e81123; color: white; }
+
+        .window-content {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        @media (max-width: 768px) {
+            .start-menu { width: calc(100% - 16px); }
+            .window {
+                width: 100% !important;
+                height: calc(100% - 48px) !important;
+                top: 0 !important;
+                left: 0 !important;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="desktop" id="desktop">
+        <div class="desktop-icon" onclick="openApp('browser', 'Nolan\\'s Browser', '🌐')">
+            <div class="desktop-icon-image">🌐</div>
+            <div class="desktop-icon-label">Nolan's Browser</div>
+        </div>
+        <div class="desktop-icon" onclick="openApp('terminal', 'Terminal', '💻')">
+            <div class="desktop-icon-image">💻</div>
+            <div class="desktop-icon-label">Terminal</div>
+        </div>
+        <div class="desktop-icon" onclick="openApp('notepad', 'Notepad', '📝')">
+            <div class="desktop-icon-image">📝</div>
+            <div class="desktop-icon-label">Notepad</div>
+        </div>
+        <div class="desktop-icon" onclick="openApp('files', 'Files', '📁')">
+            <div class="desktop-icon-image">📁</div>
+            <div class="desktop-icon-label">Files</div>
+        </div>
+        <div class="desktop-icon" onclick="openApp('settings', 'Settings', '⚙️')">
+            <div class="desktop-icon-image">⚙️</div>
+            <div class="desktop-icon-label">Settings</div>
+        </div>
+    </div>
+
+    <div class="start-menu" id="startMenu">
+        <div class="start-menu-header">
+            <div class="start-menu-user">
+                <div class="start-menu-avatar">👤</div>
+                <div class="start-menu-username">User</div>
+            </div>
+        </div>
+        <div class="start-menu-apps">
+            <div class="start-menu-section-title">Apps</div>
+            <div class="start-menu-app" onclick="openApp('browser', 'Nolan\\'s Browser', '🌐'); toggleStartMenu()">
+                <div class="start-menu-app-icon">🌐</div>
+                <div>
+                    <div class="start-menu-app-name">Nolan's Browser</div>
+                    <div class="start-menu-app-desc">Browse the web with your custom browser</div>
+                </div>
+            </div>
+            <div class="start-menu-app" onclick="openApp('terminal', 'Terminal', '💻'); toggleStartMenu()">
+                <div class="start-menu-app-icon">💻</div>
+                <div>
+                    <div class="start-menu-app-name">Terminal</div>
+                    <div class="start-menu-app-desc">Command line interface</div>
+                </div>
+            </div>
+            <div class="start-menu-app" onclick="openApp('notepad', 'Notepad', '📝'); toggleStartMenu()">
+                <div class="start-menu-app-icon">📝</div>
+                <div>
+                    <div class="start-menu-app-name">Notepad</div>
+                    <div class="start-menu-app-desc">Simple text editor</div>
+                </div>
+            </div>
+            <div class="start-menu-app" onclick="openApp('files', 'Files', '📁'); toggleStartMenu()">
+                <div class="start-menu-app-icon">📁</div>
+                <div>
+                    <div class="start-menu-app-name">Files</div>
+                    <div class="start-menu-app-desc">File manager</div>
+                </div>
+            </div>
+            <div class="start-menu-section-title">System</div>
+            <div class="start-menu-app" onclick="openApp('settings', 'Settings', '⚙️'); toggleStartMenu()">
+                <div class="start-menu-app-icon">⚙️</div>
+                <div>
+                    <div class="start-menu-app-name">Settings</div>
+                    <div class="start-menu-app-desc">System preferences</div>
+                </div>
+            </div>
+        </div>
+        <div class="start-menu-footer">
+            <button class="start-menu-footer-btn" onclick="alert('System locked')">🔒 Lock</button>
+            <button class="start-menu-footer-btn" onclick="if(confirm('Shut down GraysonOS?')) location.reload()">⏻ Shut down</button>
+        </div>
+    </div>
+
+    <div class="taskbar">
+        <button class="start-button" onclick="toggleStartMenu()">◆</button>
+        <div class="taskbar-apps" id="taskbarApps"></div>
+        <div class="system-tray">
+            <div class="system-tray-item">🔊</div>
+            <div class="system-tray-item">📶</div>
+            <div class="system-tray-item" id="clock">12:00</div>
+        </div>
+    </div>
+
+    <script>
+        let windows = [];
+        let windowIdCounter = 0;
+        let highestZIndex = 1000;
+
+        // Clock
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').textContent = 
+                now.getHours().toString().padStart(2, '0') + ':' + 
+                now.getMinutes().toString().padStart(2, '0');
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        // Start Menu
+        function toggleStartMenu() {
+            document.getElementById('startMenu').classList.toggle('show');
+        }
+
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('startMenu');
+            const btn = document.querySelector('.start-button');
+            if (!menu.contains(e.target) && e.target !== btn) {
+                menu.classList.remove('show');
+            }
+        });
+
+        // Window Management
+        function openApp(type, title, icon) {
+            const existing = windows.find(w => w.type === type && !w.element.classList.contains('minimized'));
+            if (existing) {
+                focusWindow(existing.id);
+                return;
+            }
+
+            const id = windowIdCounter++;
+            const win = { id, type, title, icon, element: null };
+            
+            const windowEl = document.createElement('div');
+            windowEl.className = 'window show';
+            windowEl.id = `window-${id}`;
+            windowEl.style.width = '1000px';
+            windowEl.style.height = '700px';
+            windowEl.style.left = (100 + id * 30) + 'px';
+            windowEl.style.top = (50 + id * 30) + 'px';
+            windowEl.style.zIndex = ++highestZIndex;
+
+            windowEl.innerHTML = `
+                <div class="window-titlebar" onmousedown="startDrag(event, ${id})">
+                    <div class="window-title">
+                        <span>${icon}</span>
+                        <span>${title}</span>
+                    </div>
+                    <div class="window-controls">
+                        <button class="window-control-btn" onclick="minimizeWindow(${id})">−</button>
+                        <button class="window-control-btn" onclick="maximizeWindow(${id})">□</button>
+                        <button class="window-control-btn close" onclick="closeWindow(${id})">×</button>
+                    </div>
+                </div>
+                <div class="window-content" id="content-${id}"></div>
+            `;
+
+            document.body.appendChild(windowEl);
+            win.element = windowEl;
+            windows.push(win);
+
+            loadAppContent(id, type);
+            updateTaskbar();
+            windowEl.addEventListener('mousedown', () => focusWindow(id));
+        }
+
+        function loadAppContent(id, type) {
+            const content = document.getElementById(`content-${id}`);
+            
+            if (type === 'browser') {
+                const browserHTML = `${document.querySelector('antml\\:document').textContent}`;
+                content.innerHTML = `<iframe srcdoc="${browserHTML.replace(/"/g, '&quot;')}"></iframe>`;
+            } else if (type === 'notepad') {
+                content.innerHTML = `<textarea style="width:100%;height:100%;border:none;padding:16px;font-family:monospace;outline:none;resize:none" placeholder="Start typing..."></textarea>`;
+            } else if (type === 'terminal') {
+                content.innerHTML = `<div style="background:#000;color:#0f0;padding:16px;font-family:monospace;height:100%;overflow:auto">
+                    <div>GraysonOS Terminal v1.0</div>
+                    <div>Type 'help' for commands</div>
+                    <div style="margin-top:12px">$<input type="text" style="background:transparent;border:none;outline:none;color:#0f0;font-family:monospace;width:90%;margin-left:4px" onkeypress="if(event.key==='Enter'){handleCommand(this);this.value=''}"></div>
+                </div>`;
+            } else if (type === 'files') {
+                content.innerHTML = `<div style="padding:20px;height:100%;overflow:auto">
+                    <h2 style="margin-bottom:20px">📁 My Files</h2>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:16px">
+                        <div style="text-align:center;padding:12px;cursor:pointer;border-radius:8px" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">
+                            <div style="font-size:48px">📄</div>
+                            <div style="font-size:13px;margin-top:8px">Document.txt</div>
+                        </div>
+                        <div style="text-align:center;padding:12px;cursor:pointer;border-radius:8px" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">
+                            <div style="font-size:48px">🖼️</div>
+                            <div style="font-size:13px;margin-top:8px">Image.png</div>
+                        </div>
+                        <div style="text-align:center;padding:12px;cursor:pointer;border-radius:8px" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">
+                            <div style="font-size:48px">📁</div>
+                            <div style="font-size:13px;margin-top:8px">Projects</div>
+                        </div>
+                    </div>
+                </div>`;
+            } else if (type === 'settings') {
+                content.innerHTML = `<div style="padding:40px;height:100%;overflow:auto">
+                    <h1 style="margin-bottom:30px">Settings</h1>
+                    <div style="margin-bottom:30px">
+                        <h3 style="margin-bottom:16px">About GraysonOS</h3>
+                        <p>Version 1.0</p>
+                        <p>A modern operating system interface</p>
+                    </div>
+                    <div>
+                        <h3 style="margin-bottom:16px">System Info</h3>
+                        <p>Browser: ${navigator.userAgent.split(' ').pop()}</p>
+                        <p>Screen: ${screen.width}x${screen.height}</p>
+                    </div>
+                </div>`;
+            }
+        }
+
+        window.handleCommand = function(input) {
+            const cmd = input.value.trim();
+            const output = input.parentElement.parentElement;
+            const response = document.createElement('div');
+            
+            if (cmd === 'help') {
+                response.innerHTML = 'Available commands: help, clear, date, echo [text]';
+            } else if (cmd === 'clear') {
+                output.innerHTML = '$<input type="text" style="background:transparent;border:none;outline:none;color:#0f0;font-family:monospace;width:90%;margin-left:4px" onkeypress="if(event.key===\'Enter\'){handleCommand(this);this.value=\'\'}">'; 
+                return;
+            } else if (cmd === 'date') {
+                response.textContent = new Date().toString();
+            } else if (cmd.startsWith('echo ')) {
+                response.textContent = cmd.substring(5);
+            } else if (cmd) {
+                response.textContent = `Command not found: ${cmd}`;
+            }
+            
+            if (response.textContent) {
+                output.insertBefore(response, input.parentElement);
+            }
+        };
+
+        function focusWindow(id) {
+            const win = windows.find(w => w.id === id);
+            if (win) {
+                win.element.style.zIndex = ++highestZIndex;
+                updateTaskbar();
+            }
+        }
+
+        function minimizeWindow(id) {
+            const win = windows.find(w => w.id === id);
+            if (win) {
+                win.element.classList.add('minimized');
+                updateTaskbar();
+            }
+        }
+
+        function maximizeWindow(id) {
+            const win = windows.find(w => w.id === id);
+            if (win) {
+                win.element.classList.toggle('maximized');
+            }
+        }
+
+        function closeWindow(id) {
+            const index = windows.findIndex(w => w.id === id);
+            if (index !== -1) {
+                windows[index].element.remove();
+                windows.splice(index, 1);
+                updateTaskbar();
+            }
+        }
+
+        function updateTaskbar() {
+            const taskbar = document.getElementById('taskbarApps');
+            taskbar.innerHTML = windows.map(w => `
+                <button class="taskbar-app ${w.element.style.zIndex == highestZIndex ? 'active' : ''}" 
+                        onclick="${w.element.classList.contains('minimized') ? 
+                            `windows.find(x=>x.id===${w.id}).element.classList.remove('minimized'); focusWindow(${w.id})` : 
+                            `focusWindow(${w.id})`}">
+                    <span class="taskbar-app-icon">${w.icon}</span>
+                    <span class="taskbar-app-title">${w.title}</span>
+                </button>
+            `).join('');
+        }
+
+        // Window Dragging
+        let draggedWindow = null;
+        let dragOffset = { x: 0, y: 0 };
+
+        function startDrag(e, id) {
+            const win = windows.find(w => w.id === id);
+            if (!win || win.element.classList.contains('maximized')) return;
+            
+            draggedWindow = win;
+            const rect = win.element.getBoundingClientRect();
+            dragOffset.x = e.clientX - rect.left;
+            dragOffset.y = e.clientY - rect.top;
+            focusWindow(id);
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            if (draggedWindow) {
+                draggedWindow.element.style.left = (e.clientX - dragOffset.x) + 'px';
+                draggedWindow.element.style.top = (e.clientY - dragOffset.y) + 'px';
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            draggedWindow = null;
+        });
+    </script>
+</body>
+</html>
